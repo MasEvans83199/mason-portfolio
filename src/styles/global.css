@@ -4,6 +4,8 @@
     --input-color: #72DE8B;
     --highlight-color: #FFFF00;
     --dim-color: #2A4A3E;
+    --terminal-background: rgba(12, 26, 26, 0.9);
+    --terminal-border: #4AE06D;
   }
   
   .dark-theme {

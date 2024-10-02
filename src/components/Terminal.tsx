@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { adventureGame } from './AdventureGame';
-import { quotes } from './quotes';
+import { adventureGame } from '../features/AdventureGame';
+import { quotes } from '../features/quotes';
 import resumePDF from '../assets/MasonEvansResume.pdf';
 import '../styles/Terminal.css';
 
@@ -21,6 +21,8 @@ const Terminal: React.FC = () => {
     const [output, setOutput] = useState<string[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
     const outputRef = useRef<HTMLDivElement>(null);
+    const [commandHistory, setCommandHistory] = useState<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
     const [gameActive, setGameActive] = useState(false);
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [enteringKonami, setEnteringKonami] = useState(false);
@@ -76,9 +78,13 @@ const Terminal: React.FC = () => {
     
       const handleInputSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        processCommand(input);
-        setInput('');
-      };
+        if (input.trim()) {
+            setCommandHistory(prev => [input, ...prev]);
+            processCommand(input);
+            setInput('');
+            setHistoryIndex(-1);
+        }
+    };    
       
     const typeOutput = (text: string, delay: number) => {
         const lines = text.split('\n');
@@ -288,8 +294,21 @@ const Terminal: React.FC = () => {
         setOutput(prev => [...prev, ...easterEgg]);
       };
 
-      const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (enteringKonami) {
+      const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            
+            const direction = e.key === 'ArrowUp' ? 1 : -1;
+            const newIndex = Math.min(Math.max(historyIndex + direction, -1), commandHistory.length - 1);
+            
+            setHistoryIndex(newIndex);
+            
+            if (newIndex >= 0) {
+                setInput(commandHistory[newIndex]);
+            } else {
+                setInput('');
+            }
+        } else if (enteringKonami) {
             e.preventDefault();
             const newSequence = [...konamiSequence, e.key];
             setKonamiSequence(newSequence);
@@ -442,6 +461,7 @@ const Terminal: React.FC = () => {
                         type="text"
                         value={input}
                         onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
                         ref={inputRef}
                         autoFocus
                     />
