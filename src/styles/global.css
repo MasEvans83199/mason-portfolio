@@ -1,0 +1,103 @@
+:root {
+    --background-color: #0C1A1A;
+    --text-color: #4AE06D;
+    --input-color: #72DE8B;
+    --highlight-color: #FFFF00;
+    --dim-color: #2A4A3E;
+  }
+  
+  .dark-theme {
+    --background-color: #0C1A1A;
+    --text-color: #4AE06D;
+    --input-color: #72DE8B;
+    --highlight-color: #FFFF00;
+    --dim-color: #2A4A3E;
+    --terminal-background: rgba(12, 26, 26, 0.9);
+    --terminal-border: #4AE06D;
+  }
+  
+  .light-theme {
+    --background-color: #E5F4E3;
+    --text-color: #0E4F30;
+    --input-color: #0A7C43;
+    --highlight-color: #FF6B1A;
+    --dim-color: #93C9A8;
+    --terminal-background: rgba(229, 244, 227, 0.9);
+    --terminal-border: #0E4F30;
+  }
+  
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    font-size: 16px;
+}
+
+body {
+    font-family: 'Fira Code', 'Courier New', monospace;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    overflow: hidden;
+}
+
+.App {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.boot-screen {
+    text-align: center;
+}
+
+.boot-text {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.progress-bar {
+    width: 300px;
+    max-width: 80vw;
+    height: 20px;
+    background-color: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.progress {
+    width: 0;
+    height: 100%;
+    background-color: var(--text-color);
+    animation: progress 3s linear;
+}
+
+@keyframes progress {
+    0% {
+        width: 0;
+    }
+
+    100% {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    html {
+        font-size: 12px;
+    }
+}
