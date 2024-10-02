@@ -72,7 +72,7 @@
     flex-grow: 1;
     margin-bottom: 20px;
     white-space: pre;
-    overflow-x: auto;
+    text-wrap: wrap;
   }
   
   .terminal-output::-webkit-scrollbar {
@@ -115,7 +115,88 @@
   input:focus {
     outline: none;
   }
-  
+
+  pre::before {
+    background-color: rgba(240, 240, 240, 0);
+  }
+
+  pre {
+    background-color: rgba(240, 240, 240, 0.1);
+    padding: 5px;
+    border-radius: 3px;
+    margin: 2px 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.hljs {
+    background: transparent;
+    color: var(--text-color);
+}
+
+.code-block {
+    background-color: rgba(40, 44, 52, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 5px 0;
+    overflow-x: auto;
+}
+
+.code-block code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-link {
+    color: #c678dd;
+}
+
+.hljs-function .hljs-keyword {
+    color: #61afef;
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-name,
+.hljs-type,
+.hljs-attribute,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition,
+.hljs-variable,
+.hljs-template-tag,
+.hljs-template-variable {
+    color: #98c379;
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion,
+.hljs-meta {
+    color: #5c6370;
+    font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-title,
+.hljs-section,
+.hljs-doctag,
+.hljs-type,
+.hljs-name,
+.hljs-strong {
+    font-weight: bold;
+}
+
+.hljs-emphasis {
+    font-style: italic;
+}
+
   .custom-cursor {
     position: absolute;
     width: 10px;
@@ -127,24 +208,6 @@
   @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
-  }
-  
-  .matrix-bg {
-    position: relative;
-  }
-  
-  .matrix-bg::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)),
-                url('src/assets/matrix.webp');
-    z-index: -1;
-    opacity: 0.1;
-    animation: matrix-fade-in 2s;
   }
   
   @keyframes matrix-fade-in {

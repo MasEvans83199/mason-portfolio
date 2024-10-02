@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import hljs from 'highlight.js/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+import 'highlight.js/styles/github-dark.css';
 import { adventureGame } from '../features/AdventureGame';
+import { challenges, listChallenges, Challenge } from '../features/Challenges';
 import { quotes } from '../features/quotes';
 import resumePDF from '../assets/MasonEvansResume.pdf';
 import '../styles/Terminal.css';
+
+hljs.registerLanguage('javascript', javascript);
 
 interface GameState {
     number: number
@@ -16,9 +22,15 @@ interface AdventureGameState {
     flags: { [key: string]: boolean };
 }
 
+interface ChallengeState {
+    active: boolean;
+    currentChallenge: Challenge | null;
+    userCode: string;
+}
+
 const Terminal: React.FC = () => {
     const [input, setInput] = useState('');
-    const [output, setOutput] = useState<string[]>([]);
+    const [output, setOutput] = useState<(string | JSX.Element)[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
     const outputRef = useRef<HTMLDivElement>(null);
     const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -29,6 +41,11 @@ const Terminal: React.FC = () => {
     const [konamiSequence, setKonamiSequence] = useState<string[]>([]);
     const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
     const [adventureGameState, setAdventureGameState] = useState<AdventureGameState | null>(null);
+    const [challengeState, setChallengeState] = useState<ChallengeState>({
+        active: false,
+        currentChallenge: null,
+        userCode: '',
+    });
 
     useEffect(() => {
         if (inputRef.current) {
@@ -42,41 +59,46 @@ const Terminal: React.FC = () => {
             outputRef.current.scrollTop = outputRef.current.scrollHeight;
         }
     }, [output]);
-    
+
     useEffect(() => {
         const terminalDiv = document.querySelector('.terminal') as HTMLElement;
         if (terminalDiv) {
             terminalDiv.focus();
         }
     }, []);
+
+    const formatCode = (code: string): JSX.Element => {
+        const highlighted = hljs.highlight(code, { language: 'javascript' }).value;
+        return <pre className="code-block"><code dangerouslySetInnerHTML={{ __html: highlighted }} /></pre>;
+    };
     
     const displayWelcomeMessage = () => {
         const asciiArt = [
-          "  __  __                         _____                        ",
-          " |  \\/  | __ _ ___  ___  _ __   | ____|_   ____ _ _ __  ___   ",
-          " | |\\/| |/ _` / __|/ _ \\| '_ \\  |  _| \\ \\ / / _` | '_ \\/ __|  ",
-          " | |  | | (_| \\__ \\ (_) | | | | | |___ \\ V / (_| | | | \\__ \\  ",
-          " |_|  |_|\\__,_|___/\\___/|_| |_| |_____| \\_/ \\__,_|_| |_|___/  ",
-          "                                                              ",
-          " ____            _    __       _ _                            ",
-          "|  _ \\ ___  _ __| |_ / _| ___ | (_) ___                       ",
-          "| |_) / _ \\| '__| __| |_ / _ \\| | |/ _ \\                      ",
-          "|  __/ (_) | |  | |_|  _| (_) | | | (_) |                     ",
-          "|_|   \\___/|_|   \\__|_|  \\___/|_|_|\\___/                      ",
-          "",
-          "Welcome to Mason Evans' Portfolio Terminal.",
-          "Type 'help' to see available commands.",
-          ""
+            "  __  __                         _____                        ",
+            " |  \\/  | __ _ ___  ___  _ __   | ____|_   ____ _ _ __  ___   ",
+            " | |\\/| |/ _` / __|/ _ \\| '_ \\  |  _| \\ \\ / / _` | '_ \\/ __|  ",
+            " | |  | | (_| \\__ \\ (_) | | | | | |___ \\ V / (_| | | | \\__ \\  ",
+            " |_|  |_|\\__,_|___/\\___/|_| |_| |_____| \\_/ \\__,_|_| |_|___/  ",
+            "                                                              ",
+            " ____            _    __       _ _                            ",
+            "|  _ \\ ___  _ __| |_ / _| ___ | (_) ___                       ",
+            "| |_) / _ \\| '__| __| |_ / _ \\| | |/ _ \\                      ",
+            "|  __/ (_) | |  | |_|  _| (_) | | | (_) |                     ",
+            "|_|   \\___/|_|   \\__|_|  \\___/|_|_|\\___/                      ",
+            "",
+            "Welcome to Mason Evans' Portfolio Terminal.",
+            "Type 'help' to see available commands.",
+            ""
         ].map(line => line.replace(/ /g, '\u00A0'));
-        
+
         setOutput(asciiArt);
-      };      
-      
-      const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
-      };
-    
-      const handleInputSubmit = (e: React.FormEvent) => {
+    };
+
+    const handleInputSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (input.trim()) {
             setCommandHistory(prev => [input, ...prev]);
@@ -84,25 +106,30 @@ const Terminal: React.FC = () => {
             setInput('');
             setHistoryIndex(-1);
         }
-    };    
-      
-    const typeOutput = (text: string, delay: number) => {
-        const lines = text.split('\n');
-        lines.forEach((line, index) => {
-          setTimeout(() => {
-            setOutput(prev => [...prev, line]);
-          }, delay * index);
-        });
-      };
-  
-      const processCommand = (cmd: string) => {
-        typeOutput(`> ${cmd}`, 100);
-    
+    };
+
+    const processCommand = (cmd: string) => {
+        if (challengeState.active) {
+            if (cmd.toLowerCase() === 'quit') {
+                setChallengeState({ active: false, currentChallenge: null, userCode: '' });
+                setOutput(prev => [...prev, "Challenge aborted. Returning to main terminal."]);
+            } else if (cmd.toLowerCase() === 'submit') {
+                submitChallenge();
+            } else {
+                const newCode = challengeState.userCode + cmd + '\n';
+                setChallengeState(prev => ({ ...prev, userCode: newCode }));
+                setOutput(prev => [...prev.slice(0, -1), formatCode(newCode)]);
+            }
+            return;
+        }     
+
+        setOutput(prev => [...prev, `> ${cmd}`]);
+
         if (enteringKonami) {
             setOutput(prev => [...prev, "Please finish entering the Konami code.", ""]);
             return;
         }
-    
+
         if (adventureGameState) {
             if (cmd.toLowerCase() === 'adventure exit') {
                 setAdventureGameState(null);
@@ -113,10 +140,10 @@ const Terminal: React.FC = () => {
                 processAdventureCommand(cmd);
             }
             return;
-        }
-    
+        }  
+
         const [mainCommand, ...args] = cmd.toLowerCase().split(' ');
-    
+
         switch (mainCommand) {
             case 'launch':
                 const projectNumber = parseInt(args[0]);
@@ -157,6 +184,20 @@ const Terminal: React.FC = () => {
                 if (args[0] === 'game') startGame();
                 if (args[0] === 'adventure') startAdventureGame();
                 break;
+            case 'list':
+            case 'list challenges':
+            case 'l':
+                const challengeList = listChallenges();
+                setOutput(prev => [...prev, "Available challenges:", ...challengeList, ""]);
+                break;
+            case 'challenge':
+                const challengeNumber = parseInt(args[0]);
+                if (!isNaN(challengeNumber)) {
+                    startChallenge(challengeNumber);
+                } else {
+                    setOutput(prev => [...prev, "Please specify a challenge number. Type 'list challenges' to see available challenges."]);
+                }
+                break;
             case 'konami':
                 displayKonamiCode();
                 break;
@@ -174,7 +215,7 @@ const Terminal: React.FC = () => {
                 }
         }
     };
-    
+
     const displayHelp = () => {
         setOutput(prev => [...prev,
             'Available commands:',
@@ -185,6 +226,8 @@ const Terminal: React.FC = () => {
             '  resume (r)  - Open my resume in a new tab',
             '  launch <project number> - Open a project in a new tab',
             '  clear (clr) - Clear the terminal',
+            '  list (challenges/l) - List of coding challenges',
+            '  challenge <challenge number> - Start a challenge',
             '  play game  - Start a number guessing game',
             '  konami     - Will not unlock 1999 mode',
             '  theme <dark/light> - Change terminal theme',
@@ -192,7 +235,7 @@ const Terminal: React.FC = () => {
             '  play adventure - Start the Coder\'s Quest adventure game',
             '    In the adventure, you can use commands like:',
             '    - adventure help',
-            '    - adventure exit',            
+            '    - adventure exit',
             ''
         ]);
     };
@@ -209,73 +252,73 @@ const Terminal: React.FC = () => {
             ""
         ]);
     };
-  
+
     const displayAbout = () => {
-      setOutput(prev => [...prev,
-        'Hi, I\'m [Your Name]!',
-        'I\'m a Full-Stack Developer passionate about creating innovative web applications.',
-        'With a strong foundation in modern web technologies, I love turning ideas into reality.',
-        ''
-      ]);
+        setOutput(prev => [...prev,
+            'Hi, I\'m [Your Name]!',
+            'I\'m a Full-Stack Developer passionate about creating innovative web applications.',
+            'With a strong foundation in modern web technologies, I love turning ideas into reality.',
+            ''
+        ]);
     };
-  
+
     const displayProjects = () => {
         setOutput(prev => [...prev,
-          'My Projects:',
-          '1. ReactJS Bird App',
-          '   A Twitter-like application for bird enthusiasts',
-          '   Technologies: React, Node.js, MongoDB',
-          '   Link: https://www.beaktobasics.com/',
-          '',
-          '2. Article Sharing Web App',
-          '   A platform for sharing and discussing articles',
-          '   Technologies: Vue.js, Express, PostgreSQL',
-          '   Link: https://article-share.example.com',
-          '',
-          '3. Graffiti Wall Tagging Web App',
-          '   An interactive digital graffiti wall',
-          '   Technologies: React, Canvas API, Firebase',
-          '   Link: https://graffiti-wall.example.com',
-          '',
-          'To open a project, type "open <project number>" (e.g., "open 1")',
-          ''
+            'My Projects:',
+            '1. ReactJS Bird App',
+            '   A Twitter-like application for bird enthusiasts',
+            '   Technologies: React, Node.js, MongoDB',
+            '   Link: https://www.beaktobasics.com/',
+            '',
+            '2. Article Sharing Web App',
+            '   A platform for sharing and discussing articles',
+            '   Technologies: Vue.js, Express, PostgreSQL',
+            '   Link: https://article-share.example.com',
+            '',
+            '3. Graffiti Wall Tagging Web App',
+            '   An interactive digital graffiti wall',
+            '   Technologies: React, Canvas API, Firebase',
+            '   Link: https://graffiti-wall.example.com',
+            '',
+            'To open a project, type "open <project number>" (e.g., "open 1")',
+            ''
         ]);
-      };
+    };
 
     const openProject = (projectNumber: number) => {
         const projects = [
-          'https://www.beaktobasics.com',
-          'https://article-share.example.com',
-          'https://tagmaster.netlify.app'
+            'https://www.beaktobasics.com',
+            'https://article-share.example.com',
+            'https://tagmaster.netlify.app'
         ];
-        
+
         if (projectNumber >= 1 && projectNumber <= projects.length) {
-          window.open(projects[projectNumber - 1], '_blank');
-          setOutput(prev => [...prev, `Launching project ${projectNumber} in a new tab...`, '']);
+            window.open(projects[projectNumber - 1], '_blank');
+            setOutput(prev => [...prev, `Launching project ${projectNumber} in a new tab...`, '']);
         } else {
-          setOutput(prev => [...prev, 'Invalid project number. Please try again.', '']);
+            setOutput(prev => [...prev, 'Invalid project number. Please try again.', '']);
         }
-      };
-  
-    const displaySkills = () => {
-      setOutput(prev => [...prev,
-        'My Skills:',
-        '- Frontend: JavaScript, TypeScript, React, Vue.js, HTML5, CSS3',
-        '- Backend: Node.js, Express, Python, Django',
-        '- Databases: MongoDB, PostgreSQL, MySQL',
-        '- Tools: Git, Docker, CI/CD',
-        ''
-      ]);
     };
-  
+
+    const displaySkills = () => {
+        setOutput(prev => [...prev,
+            'My Skills:',
+            '- Frontend: JavaScript, TypeScript, React, Vue.js, HTML5, CSS3',
+            '- Backend: Node.js, Express, Python, Django',
+            '- Databases: MongoDB, PostgreSQL, MySQL',
+            '- Tools: Git, Docker, CI/CD',
+            ''
+        ]);
+    };
+
     const displayContact = () => {
-      setOutput(prev => [...prev,
-        'Contact Information:',
-        'Email: masevans83199@gmail.com',
-        'GitHub: github.com/masevans83199',
-        'LinkedIn: linkedin.com/in/mas_evans',
-        ''
-      ]);
+        setOutput(prev => [...prev,
+            'Contact Information:',
+            'Email: masevans83199@gmail.com',
+            'GitHub: github.com/masevans83199',
+            'LinkedIn: linkedin.com/in/mas_evans',
+            ''
+        ]);
     };
 
     const openResume = () => {
@@ -285,24 +328,24 @@ const Terminal: React.FC = () => {
 
     const displayEasterEgg = () => {
         const easterEgg = [
-          "You found a secret!",
-          "Here's a fun fact: The first computer bug was an actual bug.",
-          "In 1947, Grace Hopper found a moth causing issues in the Harvard Mark II computer.",
-          "This incident popularized the term 'debugging' in computer programming.",
-          ""
+            "You found a secret!",
+            "Here's a fun fact: The first computer bug was an actual bug.",
+            "In 1947, Grace Hopper found a moth causing issues in the Harvard Mark II computer.",
+            "This incident popularized the term 'debugging' in computer programming.",
+            ""
         ];
         setOutput(prev => [...prev, ...easterEgg]);
-      };
+    };
 
-      const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
             e.preventDefault();
-            
+
             const direction = e.key === 'ArrowUp' ? 1 : -1;
             const newIndex = Math.min(Math.max(historyIndex + direction, -1), commandHistory.length - 1);
-            
+
             setHistoryIndex(newIndex);
-            
+
             if (newIndex >= 0) {
                 setInput(commandHistory[newIndex]);
             } else {
@@ -312,7 +355,7 @@ const Terminal: React.FC = () => {
             e.preventDefault();
             const newSequence = [...konamiSequence, e.key];
             setKonamiSequence(newSequence);
-            
+
             if (newSequence.length === konamiCode.length) {
                 checkKonamiCode(newSequence);
                 setEnteringKonami(false);
@@ -349,56 +392,56 @@ const Terminal: React.FC = () => {
         ];
         setOutput(prev => [...prev, ...konamiMessage]);
     };
-      
-      const startGame = () => {
+
+    const startGame = () => {
         setGameActive(true);
         setGameState({
-          number: Math.floor(Math.random() * 100) + 1,
-          attempts: 0,
-          won: false
+            number: Math.floor(Math.random() * 100) + 1,
+            attempts: 0,
+            won: false
         });
         setOutput(prev => [...prev,
-          "Let's play a number guessing game!",
-          "I'm thinking of a number between 1 and 100.",
-          "Type a number to guess, or 'quit' to end the game.",
-          ""
+            "Let's play a number guessing game!",
+            "I'm thinking of a number between 1 and 100.",
+            "Type a number to guess, or 'quit' to end the game.",
+            ""
         ]);
-      };
-      
-      const processGameCommand = (cmd: string) => {
+    };
+
+    const processGameCommand = (cmd: string) => {
         if (!gameState) return;
-      
+
         if (cmd.toLowerCase() === 'quit') {
-          setGameActive(false);
-          setGameState(null);
-          setOutput(prev => [...prev, "Game ended. Thanks for playing!", ""]);
-          return;
+            setGameActive(false);
+            setGameState(null);
+            setOutput(prev => [...prev, "Game ended. Thanks for playing!", ""]);
+            return;
         }
-      
+
         const guess = parseInt(cmd);
         if (isNaN(guess)) {
-          setOutput(prev => [...prev, "Please enter a valid number or 'quit'.", ""]);
-          return;
+            setOutput(prev => [...prev, "Please enter a valid number or 'quit'.", ""]);
+            return;
         }
-      
+
         setGameState(prev => prev ? { ...prev, attempts: prev.attempts + 1 } : null);
-      
+
         if (guess === gameState.number) {
-          setOutput(prev => [...prev,
+            setOutput(prev => [...prev,
             `Congratulations! You guessed the number ${gameState.number} in ${gameState.attempts + 1} attempts!`,
-            "Game over. Type 'play game' to play again.",
-            ""
-          ]);
-          setGameActive(false);
-          setGameState(null);
+                "Game over. Type 'play game' to play again.",
+                ""
+            ]);
+            setGameActive(false);
+            setGameState(null);
         } else if (guess < gameState.number) {
-          setOutput(prev => [...prev, "Too low! Try again.", ""]);
+            setOutput(prev => [...prev, "Too low! Try again.", ""]);
         } else {
-          setOutput(prev => [...prev, "Too high! Try again.", ""]);
+            setOutput(prev => [...prev, "Too high! Try again.", ""]);
         }
-      };
-      
-      const changeTheme = (theme: string) => {
+    };
+
+    const changeTheme = (theme: string) => {
         if (theme === 'dark') {
             document.body.classList.add('dark-theme');
             document.body.classList.remove('light-theme');
@@ -418,31 +461,69 @@ const Terminal: React.FC = () => {
         const startMessage = adventureGame.rooms.start.description;
         setOutput(prev => [...prev, "Starting Coder's Quest...", startMessage, ""]);
     };
-    
+
     const processAdventureCommand = (cmd: string) => {
         if (!adventureGameState) return;
-    
+
         if (cmd.toLowerCase() === 'adventure help') {
             displayAdventureHelp();
             return;
         }
-    
+
         const { newState, message } = adventureGame.processCommand(adventureGameState, cmd);
         setAdventureGameState(newState as AdventureGameState);
         setOutput(prev => [...prev, message, ""]);
-    
+
         if (newState.currentRoom === 'end') {
             setAdventureGameState(null);
             setOutput(prev => [...prev, "Congratulations! You've completed Coder's Quest!", ""]);
         }
-    };    
+    };
 
+    const startChallenge = (challengeNumber: number) => {
+        const challengeKeys = Object.keys(challenges);
+        if (challengeNumber > 0 && challengeNumber <= challengeKeys.length) {
+            const challengeName = challengeKeys[challengeNumber - 1];
+            const challenge = challenges[challengeName];
+            setChallengeState({
+                active: true,
+                currentChallenge: challenge,
+                userCode: '',
+            });
+            setOutput(prev => [...prev, 
+                `Starting challenge: ${challenge.name}`,
+                `Language: ${challenge.language}`,
+                challenge.description,
+                "Type your code below. It will be displayed as you type.",
+                "Type 'submit' when you're done, or 'quit' to exit the challenge.",
+                formatCode('')
+            ]);
+        } else {
+            setOutput(prev => [...prev, `Challenge number ${challengeNumber} not found.`]);
+        }
+    };
+    
+    const submitChallenge = () => {
+        if (challengeState.currentChallenge) {
+            const result = challengeState.currentChallenge.validate(challengeState.userCode);
+            setOutput(prev => [
+                ...prev, 
+                "Submitting challenge...",
+                formatCode(challengeState.userCode),
+                result.message
+            ]);
+            if (result.success) {
+                setChallengeState({ active: false, currentChallenge: null, userCode: '' });
+            }
+        }
+    };
+    
     const displayRandomQuote = () => {
         const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
         setOutput(prev => [...prev, randomQuote, ""]);
     };
 
-      return (
+    return (
         <div className="terminal" onKeyDown={handleKeyDown} tabIndex={0}>
             <div className="terminal-header">
                 <div className="terminal-button red"></div>
@@ -452,11 +533,13 @@ const Terminal: React.FC = () => {
             <div className="terminal-window">
                 <div className="terminal-output" ref={outputRef}>
                     {output.map((line, index) => (
-                        <div key={index} className="output-line typing-animation">{line}</div>
+                        <div key={index} className="output-line">
+                            {typeof line === 'string' ? line : line}
+                        </div>
                     ))}
                 </div>
                 <form onSubmit={handleInputSubmit} className="terminal-input">
-                    <span className="prompt">&gt;</span>
+                    <span className="prompt">{challengeState.active ? 'Challenge>' : '>'}</span>
                     <input
                         type="text"
                         value={input}
