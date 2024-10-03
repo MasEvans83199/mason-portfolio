@@ -61,7 +61,7 @@
     flex-grow: 1;
     padding: 20px;
     overflow-y: auto;
-    font-size: .8rem;
+    font-size: 1rem;
     font-family: 'Courier New', monospace;
     white-space: pre; 
     display: flex;
@@ -95,8 +95,9 @@
 
   .ascii-art {
     white-space: pre;
-    line-height: 1.2; 
-    font-size: 0.95rem; 
+    line-height: 1; 
+    font-size: 1.3rem; 
+    padding-bottom: 5rem;
 }
   
   .terminal-input {
