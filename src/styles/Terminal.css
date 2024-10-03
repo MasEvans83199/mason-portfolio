@@ -88,10 +88,16 @@
   }
   
   .output-line {
-    margin-bottom: 5px;
+    margin-bottom: 0;
     word-wrap: break-word;
     text-shadow: 0 0 5px var(--text-color);
   }
+
+  .ascii-art {
+    white-space: pre;
+    line-height: 1.2; 
+    font-size: 0.95rem; 
+}
   
   .terminal-input {
     display: flex;
@@ -116,30 +122,9 @@
     outline: none;
   }
 
-  pre::before {
-    background-color: rgba(240, 240, 240, 0);
-  }
-
-  pre {
-    background-color: rgba(240, 240, 240, 0.1);
-    padding: 5px;
-    border-radius: 3px;
-    margin: 2px 0;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
 .hljs {
     background: transparent;
     color: var(--text-color);
-}
-
-.code-block {
-    background-color: rgba(40, 44, 52, 0.8);
-    padding: 10px;
-    border-radius: 5px;
-    margin: 5px 0;
-    overflow-x: auto;
 }
 
 .code-block code {

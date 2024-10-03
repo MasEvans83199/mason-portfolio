@@ -58,11 +58,18 @@ body {
 
 .boot-screen {
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
 }
 
 .boot-text {
     font-size: 1.5rem;
     margin-bottom: 1rem;
+    width: 100%;
 }
 
 .progress-bar {

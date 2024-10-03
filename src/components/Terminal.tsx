@@ -79,21 +79,24 @@ const Terminal: React.FC = () => {
             " | |\\/| |/ _` / __|/ _ \\| '_ \\  |  _| \\ \\ / / _` | '_ \\/ __|  ",
             " | |  | | (_| \\__ \\ (_) | | | | | |___ \\ V / (_| | | | \\__ \\  ",
             " |_|  |_|\\__,_|___/\\___/|_| |_| |_____| \\_/ \\__,_|_| |_|___/  ",
-            "                                                              ",
             " ____            _    __       _ _                            ",
             "|  _ \\ ___  _ __| |_ / _| ___ | (_) ___                       ",
             "| |_) / _ \\| '__| __| |_ / _ \\| | |/ _ \\                      ",
             "|  __/ (_) | |  | |_|  _| (_) | | | (_) |                     ",
             "|_|   \\___/|_|   \\__|_|  \\___/|_|_|\\___/                      ",
+        ].join('\n');
+    
+        const welcomeMessage = [
+            <span key="ascii-art" className="ascii-art">{asciiArt}</span>,
             "",
             "Welcome to Mason Evans' Portfolio Terminal.",
             "Type 'help' to see available commands.",
             ""
-        ].map(line => line.replace(/ /g, '\u00A0'));
-
-        setOutput(asciiArt);
+        ];
+    
+        setOutput(welcomeMessage);
     };
-
+    
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
     };
