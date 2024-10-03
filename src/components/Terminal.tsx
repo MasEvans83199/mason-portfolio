@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import hljs from 'highlight.js/lib/core';
-import javascript from 'highlight.js/lib/languages/javascript';
-import 'highlight.js/styles/github-dark.css';
 import { adventureGame } from '../features/AdventureGame';
 import { challenges, listChallenges, Challenge } from '../features/Challenges';
+import MultiLineInput from './MultiLineInput';
 import { quotes } from '../features/quotes';
 import resumePDF from '../assets/MasonEvansResume.pdf';
 import '../styles/Terminal.css';
-
-hljs.registerLanguage('javascript', javascript);
 
 interface GameState {
     number: number
@@ -32,6 +28,7 @@ const Terminal: React.FC = () => {
     const [input, setInput] = useState('');
     const [output, setOutput] = useState<(string | JSX.Element)[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [multiLineInput, setMultiLineInput] = useState('');
     const outputRef = useRef<HTMLDivElement>(null);
     const [commandHistory, setCommandHistory] = useState<string[]>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
@@ -55,6 +52,15 @@ const Terminal: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        if (challengeState.active) {
+            setOutput(prev => [
+                ...prev.slice(0, -1),
+                formatCode(challengeState.userCode)
+            ]);
+        }
+    }, [challengeState.userCode]);
+
+    useEffect(() => {
         if (outputRef.current) {
             outputRef.current.scrollTop = outputRef.current.scrollHeight;
         }
@@ -68,10 +74,35 @@ const Terminal: React.FC = () => {
     }, []);
 
     const formatCode = (code: string): JSX.Element => {
-        const highlighted = hljs.highlight(code, { language: 'javascript' }).value;
-        return <pre className="code-block"><code dangerouslySetInnerHTML={{ __html: highlighted }} /></pre>;
+        const highlightSyntax = (text: string): JSX.Element[] => {
+            const keywords = ['function', 'return', 'const', 'let', 'var', 'if', 'else', 'for', 'while'];
+            const tokens = text.split(/(\s+|[(){}[\],;.])/);
+
+            return tokens.map((token, index) => {
+                if (keywords.includes(token)) {
+                    return <span key={index} className="keyword">{token}</span>;
+                } else if (token.match(/^[a-zA-Z_]\w*(?=\s*\()/)) {
+                    return <span key={index} className="function">{token}</span>;
+                } else if (token.match(/^['"].*['"]$/)) {
+                    return <span key={index} className="string">{token}</span>;
+                } else if (token.match(/^\d+$/)) {
+                    return <span key={index} className="number">{token}</span>;
+                } else if (token.match(/[+\-*/%=<>!&|^~?:]/)) {
+                    return <span key={index} className="operator">{token}</span>;
+                } else if (token.match(/[(){}[\],;.]/)) {
+                    return <span key={index} className="punctuation">{token}</span>;
+                }
+                return <span key={index}>{token}</span>;
+            });
+        };
+
+        return (
+            <pre className="code-block">
+                <code>{highlightSyntax(code)}</code>
+            </pre>
+        );
     };
-    
+
     const displayWelcomeMessage = () => {
         const asciiArt = [
             "  __  __                         _____                        ",
@@ -85,7 +116,7 @@ const Terminal: React.FC = () => {
             "|  __/ (_) | |  | |_|  _| (_) | | | (_) |                     ",
             "|_|   \\___/|_|   \\__|_|  \\___/|_|_|\\___/                      ",
         ].join('\n');
-    
+
         const welcomeMessage = [
             <span key="ascii-art" className="ascii-art">{asciiArt}</span>,
             "",
@@ -93,10 +124,10 @@ const Terminal: React.FC = () => {
             "Type 'help' to see available commands.",
             ""
         ];
-    
+
         setOutput(welcomeMessage);
     };
-    
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
     };
@@ -111,20 +142,28 @@ const Terminal: React.FC = () => {
         }
     };
 
+    const handleMultiLineExit = (code: string) => {
+        setOutput(prev => [...prev, <pre key={Date.now()} className="user-code">{code}</pre>]);
+        setChallengeState(prev => ({ ...prev, userCode: code }));
+        setMultiLineInput('');
+    };
+
     const processCommand = (cmd: string) => {
         if (challengeState.active) {
-            if (cmd.toLowerCase() === 'quit') {
-                setChallengeState({ active: false, currentChallenge: null, userCode: '' });
-                setOutput(prev => [...prev, "Challenge aborted. Returning to main terminal."]);
-            } else if (cmd.toLowerCase() === 'submit') {
+            if (cmd.toLowerCase() === 'submit') {
                 submitChallenge();
+            } else if (cmd.toLowerCase() === 'quit') {
+                setChallengeState({ active: false, currentChallenge: null, userCode: '' });
+                setMultiLineInput('');
+                setOutput(prev => [...prev, "Challenge aborted. Returning to main terminal."]);
+            } else if (cmd.toLowerCase() === 'edit') {
+                setMultiLineInput(challengeState.userCode);
+                setChallengeState(prev => ({ ...prev, userCode: '' }));
             } else {
-                const newCode = challengeState.userCode + cmd + '\n';
-                setChallengeState(prev => ({ ...prev, userCode: newCode }));
-                setOutput(prev => [...prev.slice(0, -1), formatCode(newCode)]);
+                setOutput(prev => [...prev, `Unrecognized command: ${cmd}. Type 'submit' to submit your code, 'edit' to modify your code, or 'quit' to exit the challenge.`]);
             }
             return;
-        }     
+        }
 
         setOutput(prev => [...prev, `> ${cmd}`]);
 
@@ -143,7 +182,7 @@ const Terminal: React.FC = () => {
                 processAdventureCommand(cmd);
             }
             return;
-        }  
+        }
 
         const [mainCommand, ...args] = cmd.toLowerCase().split(' ');
 
@@ -493,34 +532,37 @@ const Terminal: React.FC = () => {
                 currentChallenge: challenge,
                 userCode: '',
             });
-            setOutput(prev => [...prev, 
-                `Starting challenge: ${challenge.name}`,
-                `Language: ${challenge.language}`,
-                challenge.description,
-                "Type your code below. It will be displayed as you type.",
-                "Type 'submit' when you're done, or 'quit' to exit the challenge.",
-                formatCode('')
+            setMultiLineInput('');
+            setOutput(prev => [...prev,
+            `Starting challenge: ${challenge.name}`,
+            `Language: ${challenge.language}`,
+            challenge.description,
+                "Type your code in the multi-line input below.",
+                "Use Shift+Enter for new lines. Press Enter to submit your code.",
+                "After submitting, type 'submit' to submit the challenge, 'edit' to modify your code, or 'quit' to exit.",
             ]);
         } else {
             setOutput(prev => [...prev, `Challenge number ${challengeNumber} not found.`]);
         }
     };
-    
+
     const submitChallenge = () => {
-        if (challengeState.currentChallenge) {
+        if (challengeState.currentChallenge && challengeState.userCode) {
             const result = challengeState.currentChallenge.validate(challengeState.userCode);
             setOutput(prev => [
-                ...prev, 
+                ...prev,
                 "Submitting challenge...",
-                formatCode(challengeState.userCode),
                 result.message
             ]);
             if (result.success) {
                 setChallengeState({ active: false, currentChallenge: null, userCode: '' });
+                setMultiLineInput('');
             }
+        } else {
+            setOutput(prev => [...prev, "No code to submit. Use 'edit' to enter your code."]);
         }
     };
-    
+
     const displayRandomQuote = () => {
         const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
         setOutput(prev => [...prev, randomQuote, ""]);
@@ -541,17 +583,39 @@ const Terminal: React.FC = () => {
                         </div>
                     ))}
                 </div>
-                <form onSubmit={handleInputSubmit} className="terminal-input">
-                    <span className="prompt">{challengeState.active ? 'Challenge>' : '>'}</span>
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                        ref={inputRef}
-                        autoFocus
-                    />
-                </form>
+                {challengeState.active ? (
+                    challengeState.userCode ? (
+                        <form onSubmit={handleInputSubmit} className="terminal-input">
+                            <span className="prompt">{'Challenge>'}</span>
+                            <input
+                                type="text"
+                                value={input}
+                                onChange={handleInputChange}
+                                onKeyDown={handleKeyDown}
+                                ref={inputRef}
+                                autoFocus
+                            />
+                        </form>
+                    ) : (
+                        <MultiLineInput
+                            value={multiLineInput}
+                            onChange={setMultiLineInput}
+                            onExit={handleMultiLineExit}
+                        />
+                    )
+                ) : (
+                    <form onSubmit={handleInputSubmit} className="terminal-input">
+                        <span className="prompt">{'>'}</span>
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            ref={inputRef}
+                            autoFocus
+                        />
+                    </form>
+                )}
             </div>
         </div>
     );
