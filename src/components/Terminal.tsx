@@ -317,7 +317,7 @@ const Terminal: React.FC = () => {
             '   Technologies: Three.js, TailwindCSS',
             '   Link: https://tagmaster.netlify.app',
             '',
-            'To open a project, type "launch <project number>" (e.g., "open 1")',
+            'To open a project, type "launch <project number>" (e.g., "launch 1")',
             ''
         ]);
     };
