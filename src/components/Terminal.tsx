@@ -297,7 +297,7 @@ const Terminal: React.FC = () => {
 
     const displayAbout = () => {
         setOutput(prev => [...prev,
-            'Hi, I\'m [Your Name]!',
+            'Hi, I\'m Mason Evans!',
             'I\'m a Full-Stack Developer passionate about creating innovative web applications.',
             'With a strong foundation in modern web technologies, I love turning ideas into reality.',
             ''
@@ -309,18 +309,13 @@ const Terminal: React.FC = () => {
             'My Projects:',
             '1. ReactJS Bird App',
             '   A Twitter-like application for bird enthusiasts',
-            '   Technologies: React, Node.js, MongoDB',
+            '   Technologies: React, Node.js, Supabase',
             '   Link: https://www.beaktobasics.com/',
             '',
-            '2. Article Sharing Web App',
-            '   A platform for sharing and discussing articles',
-            '   Technologies: Vue.js, Express, PostgreSQL',
-            '   Link: https://article-share.example.com',
-            '',
-            '3. Graffiti Wall Tagging Web App',
+            '2. Graffiti Wall Tagging Web App',
             '   An interactive digital graffiti wall',
-            '   Technologies: React, Canvas API, Firebase',
-            '   Link: https://graffiti-wall.example.com',
+            '   Technologies: Three.js, TailwindCSS',
+            '   Link: https://tagmaster.netlify.app',
             '',
             'To open a project, type "open <project number>" (e.g., "open 1")',
             ''
@@ -330,7 +325,6 @@ const Terminal: React.FC = () => {
     const openProject = (projectNumber: number) => {
         const projects = [
             'https://www.beaktobasics.com',
-            'https://article-share.example.com',
             'https://tagmaster.netlify.app'
         ];
 
