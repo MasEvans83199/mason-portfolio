@@ -215,6 +215,10 @@ const Terminal: React.FC = () => {
             case 'r':
                 openResume();
                 break;
+            case 'github':
+            case 'g':
+                openGithub();
+                break;
             case 'clear':
             case 'clr':
                 setOutput([]);
@@ -266,6 +270,7 @@ const Terminal: React.FC = () => {
             '  skills (s)  - List my skills',
             '  contact (c) - Display contact information',
             '  resume (r)  - Open my resume in a new tab',
+            '  github (g)  - Open my GitHub in a new tab',
             '  launch <project number> - Open a project in a new tab',
             '  clear (clr) - Clear the terminal',
             '  list (challenges/l) - List of coding challenges',
@@ -297,9 +302,11 @@ const Terminal: React.FC = () => {
 
     const displayAbout = () => {
         setOutput(prev => [...prev,
-            'Hi, I\'m Mason Evans!',
-            'I\'m a Full-Stack Developer passionate about creating innovative web applications.',
-            'With a strong foundation in modern web technologies, I love turning ideas into reality.',
+            'Hello. I\'m Mason Evans.',
+            'I\'m a Full-Stack Developer with a passion for creating fun and engaging web applications.',
+            'I have been working with web development technologies for over 3 years. I\'m interested in',
+            'birds and nature, and I\'m working on a second degree in environmental science. Recently, I',
+            'have started to dive into game development as well.',
             ''
         ]);
     };
@@ -308,8 +315,8 @@ const Terminal: React.FC = () => {
         setOutput(prev => [...prev,
             'My Projects:',
             '1. ReactJS Bird App',
-            '   A Twitter-like application for bird enthusiasts',
-            '   Technologies: React, Node.js, Supabase',
+            '   A catalog of birds, and much more',
+            '   Technologies: React, Node.js, Supabase, TailwindCSS',
             '   Link: https://www.beaktobasics.com/',
             '',
             '2. Graffiti Wall Tagging Web App',
@@ -339,10 +346,10 @@ const Terminal: React.FC = () => {
     const displaySkills = () => {
         setOutput(prev => [...prev,
             'My Skills:',
-            '- Frontend: JavaScript, TypeScript, React, Vue.js, HTML5, CSS3',
+            '- Frontend: JavaScript, TypeScript, React, Vue.js, HTML, CSS, TailwindCSS',
             '- Backend: Node.js, Express, Python, Django',
-            '- Databases: MongoDB, PostgreSQL, MySQL',
-            '- Tools: Git, Docker, CI/CD',
+            '- Databases: MongoDB, PostgreSQL, MySQL, Supabase',
+            '- Tools: Git, CI/CD, VS Code, Rider',
             ''
         ]);
     };
@@ -359,8 +366,13 @@ const Terminal: React.FC = () => {
 
     const openResume = () => {
         window.open(resumePDF, '_blank');
-        setOutput(prev => [...prev, "Opening your resume...", ""]);
+        setOutput(prev => [...prev, "Opening resume...", ""]);
     };
+
+    const openGithub = () => {
+        window.open('https://github.com/masevans83199', '_blank');
+        setOutput(prev => [...prev, "Redirecting to GitHub...", ""]);
+    }
 
     const displayEasterEgg = () => {
         const easterEgg = [
